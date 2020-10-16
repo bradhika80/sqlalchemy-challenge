@@ -1,4 +1,7 @@
 
+# Student Name : Radhika Balasubramaniam
+# Project Description : Build a flask api for Hawaii climate
+
 #import project dependencies
 import numpy as np
 import os
@@ -31,28 +34,22 @@ app = Flask(__name__)
 # Flask Routes
 #################################################
 
-
-def double(inp):
-    if inp is not None:
-        return inp*2
-    else:
-        return None
-
+# add the default route
 @app.route("/")
 def welcome():
     """List all available api routes."""
     return (
         f"Available Routes:<br/>"
-        f"/api/v1.0/precipitation<br/>"
+        f"/api/v1.0/percipitation<br/>"
         f"/api/v1.0/stations<br/>"
         f"/api/v1.0/tobs<br/>"
         f"/api/v1.0/<start><br/>"
-         f"/api/v1.0/<start><end>"
+         f"/api/v1.0/<start>/<end>"
     )
 
 # add the route for precipitation
-@app.route('/api/v1.0/precipitation')
-def precipitation():
+@app.route('/api/v1.0/percipitation')
+def percipitation():
    
     # Start session
     session = Session(engine)
@@ -63,6 +60,7 @@ def precipitation():
     # close session
     session.close()
   
+    # build the percipitation list
     prcpList = []
     for prcp in results:
         prcp_dict = {}
@@ -85,6 +83,7 @@ def stations():
     # close session
     session.close()
   
+    #build all stations list
     all_stations = list(np.ravel(results))
     return jsonify(all_stations)
 
@@ -117,7 +116,7 @@ def tobs():
     # close session
     session.close()
   
-   
+   # build the temperature with date list
     tempList = []
     for temp in results:
         temp_dict = {}
@@ -129,6 +128,73 @@ def tobs():
        
     return jsonify(tempList)
 
+@app.route('/api/v1.0/<start>')
+def startTemp(start):
+
+    try:
+        date_obj = dt.datetime.strptime(start, "%Y-%m-%d")
+    except ValueError:
+        return(f"Incorrect date format, should be yyyy-mm-dd")
+
+    # Start session
+    session = Session(engine)
+
+    #get the date and temperature values
+    
+    results = session.query(func.min(measurement.tobs).label("tMin"), func.avg(measurement.tobs).label("tAvg"), \
+                func.max(measurement.tobs).label("tMax")).filter(measurement.date >= start) 
+
+    # close session
+    session.close()
+  
+   
+    tempStatList = []
+    for tempStat in results:
+        tempStat_dict = {}
+        tempStat_dict['tMin'] = tempStat.tMin
+        tempStat_dict['tAvg'] = tempStat.tAvg
+        tempStat_dict['tMax'] = tempStat.tMax
+        tempStatList.append(tempStat_dict)
+    
+       
+    return jsonify(tempStatList)
+
+@app.route('/api/v1.0/<start>/<end>')
+def startEndTemp(start, end):
+
+
+    try:
+        date_obj = dt.datetime.strptime(start, "%Y-%m-%d")
+    except ValueError:
+        return(f"Incorrect start date format, should be yyyy-mm-dd")
+    
+    try:
+        date_obj = dt.datetime.strptime(end, "%Y-%m-%d")
+    except ValueError:
+        return(f"Incorrect end date format, should be yyyy-mm-dd")
+
+    # Start session
+    session = Session(engine)
+
+    #get the date and temperature values
+    
+    results = session.query(func.min(measurement.tobs).label("tMin"), func.avg(measurement.tobs).label("tAvg"), \
+                func.max(measurement.tobs).label("tMax")).filter(measurement.date.between(start, end)) 
+
+    # close session
+    session.close()
+  
+   
+    tempStatList = []
+    for tempStat in results:
+        tempStat_dict = {}
+        tempStat_dict['tMin'] = tempStat.tMin
+        tempStat_dict['tAvg'] = tempStat.tAvg
+        tempStat_dict['tMax'] = tempStat.tMax
+        tempStatList.append(tempStat_dict)
+    
+       
+    return jsonify(tempStatList)
 
 if __name__ == '__main__':
     app.run(debug=True)
