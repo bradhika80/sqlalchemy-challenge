@@ -128,6 +128,7 @@ def tobs():
        
     return jsonify(tempList)
 
+# add the route for start
 @app.route('/api/v1.0/<start>')
 def startTemp(start):
 
@@ -159,6 +160,7 @@ def startTemp(start):
        
     return jsonify(tempStatList)
 
+# add the route for start/end
 @app.route('/api/v1.0/<start>/<end>')
 def startEndTemp(start, end):
 
