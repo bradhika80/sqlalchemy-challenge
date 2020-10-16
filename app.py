@@ -104,24 +104,29 @@ def tobs():
     minDate = dt.datetime.strptime(maxDate, '%Y-%m-%d').date() - relativedelta(years=1)
 
     
-    stmt = session.query(measurement.station, func.count(measurement.tobs).label("totalcount")).\
-                group_by(measurement.station).filter(measurement.date.between(maxDate, minDate)).\
-                order_by(func.count(measurement.tobs).desc()).first()
+    subResults = session.query(measurement.station, func.count(measurement.tobs).label("totalcount")).\
+                group_by(measurement.station).\
+                order_by(func.count(measurement.tobs).desc()).limit(1)
 
     #get the date and temperature values
-
-    results = session.query(measurement.date, measurement.tobs).filter(measurement.station == stmt.station)   
+    
+    results = session.query(measurement.station, measurement.date, measurement.tobs).\
+            filter(measurement.date.between(minDate, maxDate)).\
+            filter(measurement.station == subResults[0].station)   
 
     # close session
     session.close()
   
+   
     tempList = []
     for temp in results:
         temp_dict = {}
+        temp_dict['Station'] = temp.station
         temp_dict['Date'] = temp.date
         temp_dict['tobs'] = temp.tobs
         tempList.append(temp_dict)
     
+       
     return jsonify(tempList)
 
 
